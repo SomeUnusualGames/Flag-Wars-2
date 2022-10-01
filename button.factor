@@ -9,12 +9,11 @@ ENUM: ButtonType
     ITEMS ;
 
 TUPLE: button-vars
-    { buttonType integer }
+    { type integer }
     { name string }
     { iconWidth integer }
     { rectangle Rectangle }
-    { texture Texture2D }
-    { selected boolean } ;
+    { texture Texture2D } ;
 C: <button-vars> button-vars
 
 TUPLE: button-list
@@ -32,7 +31,7 @@ C: <button-list> button-list
         25
         130 500 240 80 Rectangle boa
         "assets/graphics/Sri-Lanka-Sword.png" load-texture
-        t <button-vars>
+        <button-vars>
     ! }
     ! Act {
         ACT enum>number
@@ -40,7 +39,7 @@ C: <button-list> button-list
         40
         370 500 240 80 Rectangle boa
         "assets/graphics/Rwanda-R-1962-2001.png" load-texture
-        f <button-vars>
+        <button-vars>
     ! }
     ! Items {
         ITEMS enum>number
@@ -48,17 +47,17 @@ C: <button-list> button-list
         70
         570 500 240 80 Rectangle boa
         "assets/graphics/Switzerland.png" load-texture
-        f <button-vars>
+        <button-vars>
     ! }
     <button-list> ;
 
 : init-buttons ( -- ) create-buttons ButtonList set ; inline
 
-:: draw-button ( button rect-offset -- )
+:: draw-button ( button rect-offset current-button player-cursor -- )
     button rectangle>> width>> 6 + :> rect-width
     button rectangle>> x>> 3 -
     button rectangle>> y>> 3 -
-    rect-width rect-offset + 6 +
+    rect-width rect-offset - 6 +
     button rectangle>> height>> 6 +
     Rectangle boa
     BLACK
@@ -66,7 +65,7 @@ C: <button-list> button-list
     
     button rectangle>> x>>
     button rectangle>> y>>
-    rect-width rect-offset +
+    rect-width rect-offset -
     button rectangle>> height>>
     Rectangle boa
     120 120 120 255 Color boa
@@ -74,14 +73,27 @@ C: <button-list> button-list
 
     button texture>> :> texture
 
-    texture
-    0 0 texture width>> texture height>> Rectangle boa
-    button rectangle>> x>> button name>> 40 measure-text + 30 +
-    button rectangle>> y>> 5 + button iconWidth>> button rectangle>> height>> 10 - Rectangle boa
-    0 0 Vector2 boa
-    0.0
-    WHITE
-    draw-texture-pro
+    button type>> current-button =
+    [
+        player-cursor
+        0 0 player-cursor width>> player-cursor height>> Rectangle boa
+        button rectangle>> x>> button name>> 40 measure-text + 30 +
+        button rectangle>> y>> 15 + 40 40 Rectangle boa
+        0 0 <Vector2>
+        0.0
+        WHITE
+        draw-texture-pro
+    ]
+    [
+        texture
+        0 0 texture width>> texture height>> Rectangle boa
+        button rectangle>> x>> button name>> 40 measure-text + 30 +
+        button rectangle>> y>> 5 + button iconWidth>> button rectangle>> height>> 10 - Rectangle boa
+        0 0 <Vector2>
+        0.0
+        WHITE
+        draw-texture-pro
+    ] if
 
     button name>>
     button rectangle>> x>> 10 +
@@ -90,10 +102,15 @@ C: <button-list> button-list
     WHITE
     draw-text ;
 
-:: draw-buttons ( -- )
+:: draw-buttons ( current-button player-cursor -- )
     ButtonList get :> buttonList
-    buttonList attackButton>> -30 draw-button
-    buttonList actButton>> -80 draw-button
-    buttonList itemButton>> -20 draw-button ;
+    buttonList attackButton>> 30 current-button player-cursor draw-button
+    buttonList actButton>> 80 current-button player-cursor draw-button
+    buttonList itemButton>> 20 current-button player-cursor draw-button ;
 
+:: unload-buttons ( -- )
+    ButtonList get :> buttonList
+    buttonList attackButton>> texture>> unload-texture
+    buttonList actButton>> texture>> unload-texture
+    buttonList itemButton>> texture>> unload-texture ;
 
