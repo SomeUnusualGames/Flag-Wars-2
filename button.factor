@@ -1,12 +1,9 @@
-USING: accessors alien.syntax alien.enums classes.struct kernel
+USING: accessors classes.struct index kernel
 math namespaces raylib strings ;
 IN: button
 
 SYMBOL: ButtonList
-ENUM: ButtonType
-    ATTACK
-    ACT
-    ITEMS ;
+INDEX: ATTACK ACT ITEMS ;
 
 TUPLE: button-vars
     { type integer }
@@ -26,26 +23,26 @@ C: <button-list> button-list
 
 : create-buttons ( -- button-list )
     ! Attack {
-        ATTACK enum>number
+        ATTACK
         "Attack"
         25
-        130 500 240 80 Rectangle boa
+        130 550 240 80 Rectangle boa
         "assets/graphics/Sri-Lanka-Sword.png" load-texture
         <button-vars>
     ! }
     ! Act {
-        ACT enum>number
+        ACT
         "Act"
         40
-        370 500 240 80 Rectangle boa
+        370 550 240 80 Rectangle boa
         "assets/graphics/Rwanda-R-1962-2001.png" load-texture
         <button-vars>
     ! }
     ! Items {
-        ITEMS enum>number
+        ITEMS
         "Items"
         70
-        570 500 240 80 Rectangle boa
+        570 550 240 80 Rectangle boa
         "assets/graphics/Switzerland.png" load-texture
         <button-vars>
     ! }
