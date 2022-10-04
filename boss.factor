@@ -3,13 +3,13 @@ IN: boss
 
 SYMBOL: Boss
 TUPLE: boss-legs
-    { legsTexture Texture2D }
+    { legs-texture Texture2D }
     { sprite Rectangle }
     { angle float } ;
 C: <boss-legs> boss-legs
 
 TUPLE: boss-head
-    { headTexture Texture2D }
+    { head-texture Texture2D }
     { sprite Rectangle }
     { angle float } ;
 C: <boss-head> boss-head
@@ -29,25 +29,25 @@ C: <boss-vars> boss-vars
     <boss-vars> ;
 
 : init-boss ( -- )
-    "assets/graphics/Sicily_legs.png" 500 200 210 226 Rectangle boa
-    "assets/graphics/Sicily_head.png" 500 200 217 226 Rectangle boa
+    "assets/graphics/Sicily_legs.png" 500 150 210 226 Rectangle boa
+    "assets/graphics/Sicily_head.png" 500 150 217 226 Rectangle boa
     new-boss Boss set ;
 
-:: update-boss ( -- )
-    Boss get :> boss
-    boss legs>> [ boss legs>> angle>> 40 get-frame-time * - ] change-angle 2drop
-    boss head>> [ 5 1.5 get-time * sin * ] change-angle 2drop ;
+: update-boss ( -- )
+    Boss get
+    dup legs>> dup angle>> 40 get-frame-time * - >>angle drop
+    dup head>> 5 1.5 get-time * sin * >>angle 2drop ;
 
 :: draw-boss ( -- )
     Boss get :> boss
-    boss legs>> legsTexture>>
+    boss legs>> legs-texture>>
     0 0 210 226 Rectangle boa
     boss legs>> sprite>>
     105 113 <Vector2>
     boss legs>> angle>>
     WHITE draw-texture-pro
 
-    boss head>> headTexture>>
+    boss head>> head-texture>>
     0 0 217 226 Rectangle boa
     boss head>> sprite>>
     108.5 113 <Vector2>
@@ -56,5 +56,5 @@ C: <boss-vars> boss-vars
 
 :: unload-boss ( -- )
     Boss get :> boss
-    boss legs>> legsTexture>> unload-texture
-    boss head>> headTexture>> unload-texture ;
+    boss legs>> legs-texture>> unload-texture
+    boss head>> head-texture>> unload-texture ;

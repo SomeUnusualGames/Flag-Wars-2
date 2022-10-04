@@ -1,29 +1,29 @@
-USING: accessors classes.struct index kernel
+USING: accessors classes.struct index indices kernel
 math namespaces raylib strings ;
 IN: button
 
 SYMBOL: ButtonList
-INDEX: ATTACK ACT ITEMS ;
+INDEX: BUTTON_ATTACK BUTTON_ACT BUTTON_ITEMS ;
 
 TUPLE: button-vars
     { type integer }
     { name string }
-    { iconWidth integer }
+    { icon-width integer }
     { rectangle Rectangle }
     { texture Texture2D } ;
 C: <button-vars> button-vars
 
 TUPLE: button-list
-    { attackButton button-vars }
-    { actButton button-vars }
-    { itemButton button-vars } ; 
+    { attack-button button-vars }
+    { act-button button-vars }
+    { item-button button-vars } ; 
 C: <button-list> button-list
 
 : new-button ( type rect texture selected -- button ) <button-vars> ; inline
 
 : create-buttons ( -- button-list )
     ! Attack {
-        ATTACK
+        BUTTON_ATTACK
         "Attack"
         25
         130 550 240 80 Rectangle boa
@@ -31,7 +31,7 @@ C: <button-list> button-list
         <button-vars>
     ! }
     ! Act {
-        ACT
+        BUTTON_ACT
         "Act"
         40
         370 550 240 80 Rectangle boa
@@ -39,7 +39,7 @@ C: <button-list> button-list
         <button-vars>
     ! }
     ! Items {
-        ITEMS
+        BUTTON_ITEMS
         "Items"
         70
         570 550 240 80 Rectangle boa
@@ -85,7 +85,7 @@ C: <button-list> button-list
         texture
         0 0 texture width>> texture height>> Rectangle boa
         button rectangle>> x>> button name>> 40 measure-text + 30 +
-        button rectangle>> y>> 5 + button iconWidth>> button rectangle>> height>> 10 - Rectangle boa
+        button rectangle>> y>> 5 + button icon-width>> button rectangle>> height>> 10 - Rectangle boa
         0 0 <Vector2>
         0.0
         WHITE
@@ -101,13 +101,13 @@ C: <button-list> button-list
 
 :: draw-buttons ( current-button player-cursor -- )
     ButtonList get :> buttonList
-    buttonList attackButton>> 30 current-button player-cursor draw-button
-    buttonList actButton>> 80 current-button player-cursor draw-button
-    buttonList itemButton>> 20 current-button player-cursor draw-button ;
+    buttonList attack-button>> 30 current-button player-cursor draw-button
+    buttonList act-button>> 80 current-button player-cursor draw-button
+    buttonList item-button>> 20 current-button player-cursor draw-button ;
 
 :: unload-buttons ( -- )
     ButtonList get :> buttonList
-    buttonList attackButton>> texture>> unload-texture
-    buttonList actButton>> texture>> unload-texture
-    buttonList itemButton>> texture>> unload-texture ;
+    buttonList attack-button>> texture>> unload-texture
+    buttonList act-button>> texture>> unload-texture
+    buttonList item-button>> texture>> unload-texture ;
 
