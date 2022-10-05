@@ -3,11 +3,11 @@
 USE: game
 IN: flag-wars-2
 
-: مامf@u#c~€¬ºk-y|\|\o|||!!🥴u ( -- )
+: main ( -- )
     init-game
     update-draw-game
     unload-game ;
 
-: flag-wars-2-run ( -- ) مامf@u#c~€¬ºk-y|\|\o|||!!🥴u ;
+: flag-wars-2-run ( -- ) main ;
 
 MAIN: flag-wars-2-run

@@ -115,10 +115,8 @@ CONSTANT: MENU_TEXT
     KEY_Z is-key-pressed
     [
         {
-            { 
-                [ menu current-button>> BUTTON_ITEMS = ]
-                [ menu MENU_ITEMS >>current-state drop ]
-            }
+            { [ menu current-button>> BUTTON_ITEMS = ] [ menu MENU_ITEMS >>current-state drop ] }
+            { [ menu current-button>> BUTTON_ACT = ] [ menu MENU_ACT >>current-state drop ] }
             [ ]
         } cond
     ] when ;
@@ -143,6 +141,7 @@ CONSTANT: MENU_TEXT
     {
         { [ menu current-state>> MENU_NONE = ] [ update-menu-none ] }
         { [ menu current-state>> MENU_ITEMS = ] [ update-menu-items ] }
+        { [ menu current-state>> MENU_ACT = ] [ update-menu-items ] }
         [ ]
     } cond ;
 
@@ -165,13 +164,22 @@ CONSTANT: MENU_TEXT
             [ text printed-text>> 150 330 40 WHITE draw-text-new-line ]
         }
         {
-            [ menu current-state>> MENU_ITEMS = ]
+            [ menu current-state>> MENU_ITEMS = menu current-state>> MENU_ACT = or ]
             [
                 menu items>> :> items
-                0 items item1>> name>> draw-item-name
-                1 items item2>> name>> draw-item-name
-                2 items item3>> name>> draw-item-name
-                3 items item4>> name>> draw-item-name
+                menu current-state>> MENU_ITEMS =
+                [
+                    0 items item1>> name>> draw-item-name
+                    1 items item2>> name>> draw-item-name
+                    2 items item3>> name>> draw-item-name
+                    3 items item4>> name>> draw-item-name
+                ]
+                [
+                    0 "Check" draw-item-name
+                    1 "Tease" draw-item-name
+                    2 "Give food" draw-item-name
+                    3 "Flirt" draw-item-name
+                ] if
 
                 menu player-cursor>>
                 0 0 menu player-cursor>> width>> menu player-cursor>> height>> Rectangle boa
