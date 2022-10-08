@@ -25,7 +25,7 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
         begin-drawing
         draw-background
         draw-boss
-        draw-menu
+        99 99 draw-menu
         end-drawing
         window-should-close not
     ] loop ;
