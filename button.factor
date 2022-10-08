@@ -1,4 +1,4 @@
-USING: accessors classes.struct index indices kernel
+USING: accessors classes.struct indices kernel
 math namespaces raylib strings ;
 IN: button
 

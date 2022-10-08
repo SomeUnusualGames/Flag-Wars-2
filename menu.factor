@@ -1,4 +1,4 @@
-USING: accessors button combinators formatting index indices kernel 
+USING: accessors button combinators formatting indices kernel 
 math namespaces raylib sequences strings unicode ;
 IN: menu
 
