@@ -1,5 +1,5 @@
 USING: accessors button combinators formatting indices kernel 
-math namespaces raylib sequences strings unicode ;
+math math.constants namespaces random raylib sequences strings unicode ;
 IN: menu
 
 INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS ;
@@ -33,6 +33,8 @@ TUPLE: menu-vars
     { current-state integer }
     { player-cursor Texture2D }
     { player-leg Texture2D }
+    { player-leg-rect Rectangle }
+    { trans-timer float }
     { text text-vars }
     { items item-list } ;
 C: <menu-vars> menu-vars
@@ -51,6 +53,8 @@ CONSTANT: MENU_TEXT
     MENU_NONE ! current state
     "assets/graphics/The_armoured_triskelion_on_the_flag_of_the_Isle_of_Man.png" load-texture
     "assets/graphics/Isle-of-Man-Leg.png" load-texture
+    520 -150 106 163 Rectangle boa ! 50 -> limit
+    0.0
     ! Text {
     0 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
     ! }
@@ -77,7 +81,7 @@ CONSTANT: MENU_TEXT
         ] if
     ] when ;
 
-:: update-menu-none ( -- )
+:: update-menu-none ( boss! -- )
     Menu get :> menu
     update-text
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu current-button>> 2 < and
@@ -89,8 +93,20 @@ CONSTANT: MENU_TEXT
     KEY_Z is-key-pressed
     [
         {
-            { [ menu current-button>> BUTTON_ITEMS = ] [ menu MENU_ITEMS >>current-state drop ] }
+            { 
+                [ menu current-button>> BUTTON_ATTACK = ] 
+                [ 
+                    menu MENU_ATTACK >>current-state drop
+                    boss ! Put the boss tuple on the stack
+                    100 random 150 + >>damage ! Update the damage value [150 ~ 250)
+                    dup hp>> ! dup: duplicate the boss tuple: boss -> boss boss | Get the hp: boss hp
+                    over damage>> ! over: boss hp -> boss hp boss | Get the damage: boss hp damage
+                    - ! Substract hp - damage | Stack: boss new-hp
+                    >>hp ! Update the hp value
+                    boss! ! Update the boss tuple
+                ] }
             { [ menu current-button>> BUTTON_ACT = ] [ menu MENU_ACT >>current-state drop ] }
+            { [ menu current-button>> BUTTON_ITEMS = ] [ menu MENU_ITEMS >>current-state drop ] }
             [ ]
         } cond
     ] when ;
@@ -110,10 +126,32 @@ CONSTANT: MENU_TEXT
 
     KEY_X is-key-pressed [ menu MENU_NONE >>current-state drop ] when ;
 
-:: update-menu ( -- )
+:: update-menu-attack ( boss! -- )
+    boss current-hp>> boss hp>> >
+    [ 
+        boss
+        dup current-hp>> 3 - >>current-hp boss!
+        boss current-hp>> boss hp>> - 0 <   ! Check if current-hp < hp
+        [ boss dup hp>> >>current-hp boss! ] when
+    ] when
+
+    Menu get
+    dup trans-timer>> 0 >
+    [ dup trans-timer>> get-frame-time - >>trans-timer drop ]
+    [
+        dup player-leg-rect>>
+        dup y>>
+        dup 70 <=
+        [ 500 get-frame-time * + >>y >>player-leg-rect ]
+        [ 2drop 3.0 >>trans-timer ] if
+        drop 
+    ] if ;
+
+:: update-menu ( boss! -- )
     Menu get :> menu
     {
-        { [ menu current-state>> MENU_NONE = ] [ update-menu-none ] }
+        { [ menu current-state>> MENU_NONE = ] [ boss update-menu-none ] }
+        { [ menu current-state>> MENU_ATTACK = ] [ boss update-menu-attack ] }
         { [ menu current-state>> MENU_ITEMS = ] [ update-menu-items ] }
         { [ menu current-state>> MENU_ACT = ] [ update-menu-items ] }
         [ ]
@@ -143,7 +181,7 @@ CONSTANT: MENU_TEXT
         ] if
     ] each-integer ;
 
-:: draw-menu ( player-hp max-hp -- )
+:: draw-menu ( player-hp max-hp boss-current-hp boss-max-hp -- )
     Menu get :> menu
     menu text>> :> text
     menu current-button>> menu player-cursor>> draw-buttons
@@ -164,6 +202,20 @@ CONSTANT: MENU_TEXT
         {
             [ menu current-state>> MENU_NONE = ]
             [ text printed-text>> 150 330 40 WHITE draw-text-new-line ]
+        }
+        {
+            [ menu current-state>> MENU_ATTACK = ]
+            [
+                250 20 boss-max-hp 2 / 40 Rectangle boa BLACK draw-rectangle-rec
+                250 20 boss-current-hp 2 / 40 Rectangle boa GREEN draw-rectangle-rec
+                menu player-leg>>
+                0 0 106 163 Rectangle boa
+                menu player-leg-rect>>
+                53 81.5 <Vector2>
+                45
+                WHITE
+                draw-texture-pro
+            ]
         }
         {
             [ menu current-state>> MENU_ITEMS = menu current-state>> MENU_ACT = or ]

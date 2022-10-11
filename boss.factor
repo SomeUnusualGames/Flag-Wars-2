@@ -15,11 +15,17 @@ TUPLE: boss-head
 C: <boss-head> boss-head
 
 TUPLE: boss-vars
+    { hp integer }
+    { current-hp integer }
+    { max-hp integer read-only }
+    { damage integer }
     { legs boss-legs }
     { head boss-head } ;
 C: <boss-vars> boss-vars
 
 :: new-boss ( legs-path legs-sprite head-path head-sprite -- boss )
+    999 999 999
+    0
     legs-path load-texture
     legs-sprite
     0.0 <boss-legs>

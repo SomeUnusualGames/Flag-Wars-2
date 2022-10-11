@@ -1,4 +1,4 @@
-USING: boss classes.struct kernel menu namespaces raylib ;
+USING: accessors boss classes.struct kernel menu namespaces raylib ;
 IN: game
 
 CONSTANT: SICILY-RED S{ Color f 218 18 26 255 }
@@ -21,11 +21,11 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
 : update-draw-game ( -- )
     [
         update-boss
-        update-menu
+        Boss get update-menu
         begin-drawing
         draw-background
         draw-boss
-        99 99 draw-menu
+        99 99 Boss get dup current-hp>> swap max-hp>> draw-menu
         end-drawing
         window-should-close not
     ] loop ;
