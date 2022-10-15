@@ -3,11 +3,13 @@
 USE: game
 IN: flag-wars-2
 
-: You-can-pretty-much-put-any-random-garbage-here-and-factor-will-happily-compile-it-even-e🅱ojis🤤⚖🚯🗑🗑📶🚢👩‍🦯🩳🛀🧔💇‍♀️ ( -- )
+! TODO: After boss current-hp == hp, show boss message and start wave
+
+: main ( -- )
     init-game
     update-draw-game
     unload-game ;
 
-: flag-wars-2-run ( -- ) You-can-pretty-much-put-any-random-garbage-here-and-factor-will-happily-compile-it-even-e🅱ojis🤤⚖🚯🗑🗑📶🚢👩‍🦯🩳🛀🧔💇‍♀️ ;
+: flag-wars-2-run ( -- ) main ;
 
 MAIN: flag-wars-2-run

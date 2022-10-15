@@ -2,7 +2,7 @@ USING: accessors button combinators formatting indices kernel
 math math.constants namespaces random raylib sequences strings unicode ;
 IN: menu
 
-INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS ;
+INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS MENU_DIALOGUE ;
 
 TUPLE: item-vars
     { name string }
@@ -10,6 +10,8 @@ TUPLE: item-vars
     { used boolean } ;
 C: <item-vars> item-vars
 
+! This should be an array but hardcoding it like this is easier...
+! awful, but easier.
 TUPLE: item-list
     { item-index integer }
     { item1 item-vars }
@@ -20,7 +22,8 @@ C: <item-list> item-list
 
 SYMBOL: Menu
 TUPLE: text-vars
-    { selected-text integer }
+    { selected-text-menu integer }
+    { selected-text-dialogue integer }
     { current-character integer }
     { max-delay float }
     { delay float }
@@ -32,31 +35,45 @@ TUPLE: menu-vars
     { current-button integer }
     { current-state integer }
     { player-cursor Texture2D }
+    { bubble-speech Texture2D }
     { player-leg Texture2D }
     { player-leg-rect Rectangle }
     { trans-timer float }
+    { attack-action-done boolean }
     { text text-vars }
     { items item-list } ;
 C: <menu-vars> menu-vars
 
 CONSTANT: MENU_TEXT
-    { 
-        "Flag of Sicily but it's a quirky|RPG battle."
-        "When the moon hits your eye|like a big Pizza pie, that's AMORE"
-        "Smells like Italian stereotypes...|and pizza."
-        "Test text 2"
-        "Test text 3"
-    }
+{
+    "Flag of Sicily but it's a quirky|RPG battle."
+    "Smells like Italian stereotypes...|and pizza."
+    "When the moon hits your eye|like a big Pizza pie, that's AMORE"
+    "Test text 2"
+    "Test text 3"
+}
+
+CONSTANT: PRE_BATTLE_TEXT_IT
+{
+    "Lasciami in|pace..." ! Attack 1
+}
+
+CONSTANT: PRE_BATTLE_TEXT_EN
+{
+    "Leave me|alone..."
+}
 
 : init-menu ( -- )
     BUTTON_ATTACK ! current button
     MENU_NONE ! current state
     "assets/graphics/The_armoured_triskelion_on_the_flag_of_the_Isle_of_Man.png" load-texture
+    "assets/graphics/bubble.png" load-texture
     "assets/graphics/Isle-of-Man-Leg.png" load-texture
     520 -150 106 163 Rectangle boa ! 50 -> limit
     0.0
+    f
     ! Text {
-    0 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
+    0 0 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
     ! }
     ! Items {
     0 ! Current item selected (Items)
@@ -111,49 +128,73 @@ CONSTANT: MENU_TEXT
         } cond
     ] when ;
 
-:: update-menu-items ( -- )
+:: update-menu-items ( is-act -- )
     Menu get :> menu
+    menu items>> item-index>> :> new-index!
 
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu items>> item-index>> 2 mod 0 = and
-    [ menu items>> dup item-index>> 1 + >>item-index drop ] when
+    [ menu items>> item-index>> 1 + new-index! ] when
     KEY_A is-key-pressed KEY_LEFT is-key-pressed or menu items>> item-index>> 2 mod 0 = not and
-    [ menu items>> dup item-index>> 1 - >>item-index drop ] when
+    [ menu items>> item-index>> 1 - new-index! ] when
 
     KEY_W is-key-pressed KEY_UP is-key-pressed or menu items>> item-index>> 2 >= and
-    [ menu items>> dup item-index>> 2 - >>item-index drop ] when
+    [ menu items>> item-index>> 2 - new-index! ] when
     KEY_S is-key-pressed KEY_DOWN is-key-pressed or menu items>> item-index>> 2 < and
-    [ menu items>> dup item-index>> 2 + >>item-index drop ] when
+    [ menu items>> item-index>> 2 + new-index! ] when
 
-    KEY_X is-key-pressed [ menu MENU_NONE >>current-state drop ] when ;
+    is-act not is-act new-index 3 < and or
+    [ menu items>> new-index >>item-index drop ] when
+
+    KEY_X is-key-pressed
+    [ 
+        menu MENU_NONE >>current-state
+        items>> 0 >>item-index drop
+    ] when ;
 
 :: update-menu-attack ( boss! -- )
     boss current-hp>> boss hp>> >
     [ 
         boss
-        dup current-hp>> 3 - >>current-hp boss!
+        dup current-hp>> 5 - >>current-hp boss!
         boss current-hp>> boss hp>> - 0 <   ! Check if current-hp < hp
         [ boss dup hp>> >>current-hp boss! ] when
     ] when
 
+   
     Menu get
-    dup trans-timer>> 0 >
-    [ dup trans-timer>> get-frame-time - >>trans-timer drop ]
+    dup attack-action-done>> 
+    [
+        dup trans-timer>> 0 >
+        [ dup trans-timer>> get-frame-time - >>trans-timer ]
+        [
+            MENU_DIALOGUE >>current-state
+            dup text>>
+            dup selected-text-dialogue>> PRE_BATTLE_TEXT_IT nth >>current-text
+            0 >>current-character
+            "" >>printed-text
+            drop
+        ] if
+        drop
+    ]
     [
         dup player-leg-rect>>
         dup y>>
         dup 70 <=
         [ 500 get-frame-time * + >>y >>player-leg-rect ]
-        [ 2drop 3.0 >>trans-timer ] if
-        drop 
+        [ 2drop 1.0 >>trans-timer t >>attack-action-done ] if
+        drop
     ] if ;
+
+! : update-pre-battle-dialogue ( -- ) ;
 
 :: update-menu ( boss! -- )
     Menu get :> menu
     {
         { [ menu current-state>> MENU_NONE = ] [ boss update-menu-none ] }
         { [ menu current-state>> MENU_ATTACK = ] [ boss update-menu-attack ] }
-        { [ menu current-state>> MENU_ITEMS = ] [ update-menu-items ] }
-        { [ menu current-state>> MENU_ACT = ] [ update-menu-items ] }
+        { [ menu current-state>> MENU_ITEMS = ] [ f update-menu-items ] }
+        { [ menu current-state>> MENU_ACT = ] [ t update-menu-items ] }
+        { [ menu current-state>> MENU_DIALOGUE = ] [ update-text ] }
         [ ]
     } cond ;
 
@@ -180,6 +221,9 @@ CONSTANT: MENU_TEXT
             current-text i final-text nth 1string string-append current-text!
         ] if
     ] each-integer ;
+
+! Todo: Move this function to a "utils" file
+: count-char ( str substr -- n ) split-subseq length 1 - ; inline
 
 :: draw-menu ( player-hp max-hp boss-current-hp boss-max-hp -- )
     Menu get :> menu
@@ -241,6 +285,23 @@ CONSTANT: MENU_TEXT
                 0.0
                 WHITE
                 draw-texture-pro
+            ]
+        }
+        {
+            [ menu current-state>> MENU_DIALOGUE = ]
+            [ 
+                menu bubble-speech>>
+                0 0 243 233 Rectangle boa
+                590 55 243
+                get-font-default text current-text>> 30 1 measure-text-ex y>>
+                text current-text>> "|" count-char 1 + *
+                20 +
+                Rectangle boa                
+                0 0 <Vector2> ! 121.5 151.5 <Vector2>
+                0.0
+                WHITE
+                draw-texture-pro
+                text printed-text>> 630 60 30 BLACK draw-text-new-line
             ]
         }
         [ ]
