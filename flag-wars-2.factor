@@ -3,8 +3,6 @@
 USE: game
 IN: flag-wars-2
 
-! TODO: After boss current-hp == hp, show boss message and start wave
-
 : main ( -- )
     init-game
     update-draw-game

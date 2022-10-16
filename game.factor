@@ -1,4 +1,4 @@
-USING: accessors boss classes.struct kernel menu namespaces raylib ;
+USING: accessors boss classes.struct kernel menu namespaces player raylib ;
 IN: game
 
 CONSTANT: SICILY-RED S{ Color f 218 18 26 255 }
@@ -8,7 +8,8 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
     960 640 "Flag wars 2" init-window
     60 set-target-fps
     init-boss
-    init-menu ;
+    init-menu
+    init-player ;
 
 : draw-background ( -- )
     SICILY-RED clear-background

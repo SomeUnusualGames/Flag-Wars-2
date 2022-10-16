@@ -1,8 +1,9 @@
 USING: accessors button combinators formatting indices kernel 
-math math.constants namespaces random raylib sequences strings unicode ;
+math math.constants namespaces player random raylib sequences
+splitting strings unicode ;
 IN: menu
 
-INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS MENU_DIALOGUE ;
+INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS MENU_DIALOGUE MENU_BATTLE ;
 
 TUPLE: item-vars
     { name string }
@@ -84,7 +85,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     <menu-vars> Menu set
     init-buttons ;
 
-:: update-text ( -- )
+:: update-text ( is-dialogue -- )
     Menu get text>> :> text
     text current-character>> text current-text>> length <
     [   
@@ -96,11 +97,15 @@ CONSTANT: PRE_BATTLE_TEXT_EN
             dup current-character>> 1 + >>current-character
             dup max-delay>> >>delay drop
         ] if
-    ] when ;
+    ]
+    [
+        is-dialogue KEY_Z is-key-pressed and
+        [ Menu get MENU_BATTLE >>current-state drop ] when
+    ] if ;
 
 :: update-menu-none ( boss! -- )
     Menu get :> menu
-    update-text
+    f update-text
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu current-button>> 2 < and
     [ menu dup current-button>> 1 + >>current-button drop ] when
 
@@ -185,8 +190,6 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         drop
     ] if ;
 
-! : update-pre-battle-dialogue ( -- ) ;
-
 :: update-menu ( boss! -- )
     Menu get :> menu
     {
@@ -194,7 +197,8 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         { [ menu current-state>> MENU_ATTACK = ] [ boss update-menu-attack ] }
         { [ menu current-state>> MENU_ITEMS = ] [ f update-menu-items ] }
         { [ menu current-state>> MENU_ACT = ] [ t update-menu-items ] }
-        { [ menu current-state>> MENU_DIALOGUE = ] [ update-text ] }
+        { [ menu current-state>> MENU_DIALOGUE = ] [ t update-text ] }
+        { [ menu current-state>> MENU_BATTLE = ] [ update-player ] }
         [ ]
     } cond ;
 
@@ -303,6 +307,10 @@ CONSTANT: PRE_BATTLE_TEXT_EN
                 draw-texture-pro
                 text printed-text>> 630 60 30 BLACK draw-text-new-line
             ]
+        }
+        {
+            [ menu current-state>> MENU_BATTLE = ]
+            [ draw-player ]
         }
         [ ]
     } cond ;
