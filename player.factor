@@ -6,6 +6,9 @@ SYMBOL: Player
 TUPLE: player-vars
     { texture Texture2D }
     { box Rectangle }
+    { size Vector2 }
+    { hp float }
+    { max-hp float }
     { angle float } ;
 C: <player-vars> player-vars
 
@@ -14,10 +17,12 @@ CONSTANT: PLAYER-SPEED 3.0
 : init-player ( -- )
     "assets/graphics/The_armoured_triskelion_on_the_flag_of_the_Isle_of_Man.png" load-texture
     480 450 40 40 Rectangle boa
+    15 10 <Vector2>
+    99 99
     0.0
     <player-vars> Player set ;
 
-:: player-movement ( player! -- )
+:: player-movement ( player! text-box -- )
     player angle>> :> new-angle!
     0 0 <Vector2> :> movement!
     player box>> x>> player box>> y>> 40 40 Rectangle boa :> current-box!
@@ -57,27 +62,27 @@ CONSTANT: PLAYER-SPEED 3.0
     ] when
 
     movement x>> 2 fpow movement y>> 2 fpow + sqrt :> magnitude
-    magnitude PLAYER-SPEED >
-    [
-        movement dup x>> 2 sqrt / >>x movement!
-        movement dup y>> 2 sqrt / >>y movement!
-    ] when
+    ! magnitude PLAYER-SPEED >
+    ! [
+    movement dup x>> magnitude / PLAYER-SPEED * >>x movement!
+    movement dup y>> magnitude / PLAYER-SPEED * >>y movement!
+    ! ] when
 
-    movement x>> 0 = not
-    [ current-box dup x>> movement x>> + >>x current-box! ] when
-    movement y>> 0 = not
-    [ current-box dup y>> movement y>> + >>y current-box! ] when
+    movement x>> 0 =
+    [ current-box dup x>> movement x>> + >>x current-box! ] unless
+    movement y>> 0 =
+    [ current-box dup y>> movement y>> + >>y current-box! ] unless
 
-    current-box x>> 127 > current-box x>> get-screen-width 130 - < and
+    current-box x>> 20 - text-box x>> > current-box x>> 20 + text-box x>> text-box width>> + < and
     [ player box>> current-box x>> >>x drop ] when
 
-    current-box y>> 325 > current-box y>> 473 < and
+    current-box y>> 20 - text-box y>> > current-box y>> 20 + text-box y>> text-box height>> + < and
     [ player box>> current-box y>> >>y drop ] when ;
 
-: update-player ( -- )
+:: update-player ( text-box -- )
     Player get
-    dup angle>> 40 get-frame-time * - >>angle
-    player-movement ;
+    [ 40 get-frame-time * - ] change-angle
+    text-box player-movement ;
 
 :: draw-player ( -- )
     Player get :> player
@@ -87,4 +92,6 @@ CONSTANT: PLAYER-SPEED 3.0
     20 20 <Vector2>
     player angle>>
     WHITE
-    draw-texture-pro ;
+    draw-texture-pro
+    player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa WHITE draw-rectangle-rec
+    ;
