@@ -58,11 +58,14 @@ CONSTANT: MENU_TEXT
 CONSTANT: PRE_BATTLE_TEXT_IT
 {
     "Lasciami in|pace..." ! Attack 1
+    "Non voglio|davvero|essere qui..." ! Attack 2
+
 }
 
 CONSTANT: PRE_BATTLE_TEXT_EN
 {
     "Leave me|alone..."
+    "I really|don't want|to be here..."
 }
 
 : init-menu ( -- )
@@ -123,7 +126,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
                 [ menu current-button>> BUTTON_ATTACK = ] 
                 [ 
                     menu MENU_ATTACK >>current-state drop
-                    wave [ 1 + ] change-current-wave drop
+                    wave [ 1 + ] change-current-wave f >>change-menu drop
                     boss 100 random 150 + >>damage
                     dup [ boss damage>> - ] change-hp boss!
                     drop
@@ -206,13 +209,15 @@ CONSTANT: PRE_BATTLE_TEXT_EN
                 menu text-box-rect>> player update-wave
                 menu text-box-rect>> update-player
                 Waves get change-menu>>
-                [ 
+                [
+                    Waves get f >>box-size-changed drop
                     menu
                     MENU_NONE >>current-state
                     dup text>>
                     0 >>current-character
                     "" >>printed-text
                     [ 1 + ] change-selected-text-menu
+                    [ 1 + ] change-selected-text-dialogue
                     dup selected-text-menu>> MENU_TEXT nth >>current-text >>text
                     drop
                 ] when
