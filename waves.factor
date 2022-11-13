@@ -1,8 +1,8 @@
-USING: accessors combinators indices kernel math math.constants namespaces
-random raylib sequences ;
+USING: accessors combinators indices kernel math math.constants math.functions
+namespaces random raylib sequences ;
 IN: waves
 
-INDEX: WAVE_NONE WAVE_1 WAVE_2 ;
+INDEX: WAVE_NONE WAVE_1 WAVE_2 WAVE_3 ;
 
 SYMBOL: Waves
 TUPLE: Bullet
@@ -21,6 +21,7 @@ TUPLE: wave-vars
     { box Rectangle }
     { leg-texture Texture2D }
     { pizza-texture Texture2D }
+    { tower-texture Texture2D }
     { bullet-list sequence }
     { box-size-changed boolean } 
     { change-menu boolean } ;
@@ -35,6 +36,7 @@ C: <wave-vars> wave-vars
     105 305 get-screen-width 210 - 190 Rectangle boa
     "assets/graphics/Sicily_leg.png" load-texture
     "assets/graphics/pizza.png" load-texture
+    "assets/graphics/pisa_tower.png" load-texture
     0 { } new-sequence f f <wave-vars> Waves set ;
 
 :: create-pizza ( i -- )
@@ -65,7 +67,7 @@ C: <wave-vars> wave-vars
                     wave
                     350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
                     t >>box-size-changed
-                    15.0 >>wave-timer
+                    15.0 >>wave-timer drop
                     14
                     [| i |
                         wave 
@@ -78,7 +80,6 @@ C: <wave-vars> wave-vars
                         <Bullet> suffix
                         >>bullet-list drop
                     ] each-integer
-                    drop
                 ]
             }
             {
@@ -87,8 +88,30 @@ C: <wave-vars> wave-vars
                     wave
                     250 300 get-screen-width 500 - 200 Rectangle boa >>current-box
                     t >>box-size-changed
-                    18.0 >>wave-timer
-                    18 [ create-pizza ] each-integer drop
+                    18.0 >>wave-timer drop
+                    18 [ create-pizza ] each-integer
+                ]
+            }
+            {
+                [ wave current-wave>> WAVE_3 = ]
+                [
+                    wave
+                    350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
+                    t >>box-size-changed
+                    20.0 >>wave-timer drop
+                    14
+                    [| i |
+                        wave 
+                        dup bullet-list>>
+                        100 random :> rand-n
+                        rand-n 2 mod 0 = 380 get-screen-width 480 - ? get-screen-height 200 + 56 339 Rectangle boa
+                        0 -320 <Vector2>
+                        0.0 rand-n 2 mod 0 = 3.97 -3.97 ?
+                        i i +
+                        f
+                        <Bullet> suffix
+                        >>bullet-list drop
+                    ] each-integer
                 ]
             }
             [ ]
@@ -97,12 +120,23 @@ C: <wave-vars> wave-vars
     [
         text-box-rect x>> wave current-box>> x>> - dup 0 =
         [ text-box-rect [ swap sgn 10 * - ] change-x ] unless
-
         text-box-rect width>> wave current-box>> width>> - dup 0 =
         [ text-box-rect [ swap sgn 20 * - ] change-width ] unless
         2drop
+
+        text-box-rect y>> wave current-box>> y>> - dup 0 =
+        [ text-box-rect [ swap sgn 10 * - ] change-y ] unless
+        text-box-rect height>> wave current-box>> height>> - dup 0 =
+        [ text-box-rect [ swap sgn 10 * - ] change-height ] unless
+        2drop
+
         ! wave wave-timer>> . "wave-timer<-" print
-        wave dup wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and >>change-menu drop
+        wave wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and
+        [
+            wave t >>change-menu drop
+            player 480 450 40 40 Rectangle boa >>box drop
+        ] when
+
     ] if
     wave wave-timer>> 0 >
     [
@@ -168,9 +202,25 @@ C: <wave-vars> wave-vars
                         bullet angle-facing>> 180 * pi /
                         WHITE
                         draw-texture-pro
-                        bullet hitbox>> WHITE draw-rectangle-rec
+                        ! bullet hitbox>> WHITE draw-rectangle-rec
                     ]
                 }
+                {
+                    [ wave current-wave>> WAVE_3 = ]
+                    [ 
+                        350 300 get-screen-width 700 - 200 begin-scissor-mode
+                        wave tower-texture>>
+                        0 0 112 339 Rectangle boa
+                        bullet hitbox>> x>> bullet hitbox>> y>> 112 339 Rectangle boa
+                        0 0 <Vector2> ! 56 169.5 <Vector2>
+                        bullet angle-facing>>
+                        WHITE
+                        draw-texture-pro
+                        ! bullet hitbox>> WHITE draw-rectangle-rec
+                        end-scissor-mode
+                    ]
+                }
+                [ ]
             } cond
             ! bullet hitbox>> WHITE draw-rectangle-rec
         ] when
@@ -179,4 +229,5 @@ C: <wave-vars> wave-vars
 : unload-waves ( -- )
     Waves get
     dup leg-texture>> unload-texture 
-    pizza-texture>> unload-texture ;
+    dup pizza-texture>> unload-texture
+    tower-texture>> unload-texture ;

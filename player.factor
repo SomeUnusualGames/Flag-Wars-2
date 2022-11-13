@@ -92,6 +92,5 @@ CONSTANT: PLAYER-SPEED 3.0
     20 20 <Vector2>
     player angle>>
     WHITE
-    draw-texture-pro
-    player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa WHITE draw-rectangle-rec
-    ;
+    draw-texture-pro ;
+    ! player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa WHITE draw-rectangle-rec

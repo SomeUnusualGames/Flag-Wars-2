@@ -50,7 +50,8 @@ CONSTANT: MENU_TEXT
 {
     "Flag of Sicily but it's a quirky|RPG battle."
     "Smells like Italian stereotypes...|and pizza pie."
-    "When the moon hits your eye|like a big Pizza pie, that's AMORE"
+    "Pack it, box it, flip it, top it~"
+    ! "When the moon hits your eye|like a big Pizza pie, that's AMORE"
     "Test text 2"
     "Test text 3"
 }
@@ -59,13 +60,14 @@ CONSTANT: PRE_BATTLE_TEXT_IT
 {
     "Lasciami in|pace..." ! Attack 1
     "Non voglio|davvero|essere qui..." ! Attack 2
-
+    "..."
 }
 
 CONSTANT: PRE_BATTLE_TEXT_EN
 {
     "Leave me|alone..."
     "I really|don't want|to be here..."
+    "..."
 }
 
 : init-menu ( -- )
