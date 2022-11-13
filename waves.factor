@@ -1,5 +1,5 @@
-USING: accessors combinators indices kernel math math.constants math.functions
-namespaces random raylib sequences ;
+USING: accessors combinators indices kernel math math.functions
+namespaces random raylib sequences utils ;
 IN: waves
 
 INDEX: WAVE_NONE WAVE_1 WAVE_2 WAVE_3 ;
@@ -27,8 +27,6 @@ TUPLE: wave-vars
     { change-menu boolean } ;
 C: <wave-vars> wave-vars
 
-: deg>rad ( deg -- rad ) pi * 180 / ; inline
-
 : init-waves ( -- )
     WAVE_NONE
     100 300 get-screen-width 200 - 200 Rectangle boa
@@ -38,6 +36,24 @@ C: <wave-vars> wave-vars
     "assets/graphics/pizza.png" load-texture
     "assets/graphics/pisa_tower.png" load-texture
     0 { } new-sequence f f <wave-vars> Waves set ;
+
+:: set-wave-1 ( -- )
+    Waves get
+    350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
+    t >>box-size-changed
+    15.0 >>wave-timer drop
+    14
+    [| i |
+        Waves get
+        dup bullet-list>>
+        250 random 350 + get-screen-height 100 + 60 152 Rectangle boa
+        0 -250 <Vector2>
+        0.0 0.0
+        i 1.2 /
+        f
+        <Bullet> suffix
+        >>bullet-list drop
+    ] each-integer ;
 
 :: create-pizza ( i -- )
     Waves get :> wave
@@ -56,122 +72,130 @@ C: <wave-vars> wave-vars
     x 10 - y 23 + 15 15 Rectangle boa 250 250 <Vector2> 0.0 235.0 deg>rad i 1.2 / f <Bullet> suffix
     >>bullet-list drop ;
 
+: set-wave-2 ( -- )
+    Waves get
+    250 300 get-screen-width 500 - 200 Rectangle boa >>current-box
+    t >>box-size-changed
+    18.0 >>wave-timer drop
+    18 [ create-pizza ] each-integer ;
+
+:: set-wave-3 ( -- )
+    Waves get
+    350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
+    t >>box-size-changed
+    20.0 >>wave-timer drop
+    14
+    [| i |
+        Waves get
+        dup bullet-list>>
+        100 random :> rand-n
+        rand-n 2 mod 0 = 380 get-screen-width 480 - ? get-screen-height 200 + 56 339 Rectangle boa
+        0 -320 <Vector2>
+        0.0 rand-n 2 mod 0 = 3.97 -3.97 ?
+        i i +
+        f
+        <Bullet> suffix
+        >>bullet-list drop
+    ] each-integer ;
+
+:: change-box-size ( text-box-rect! player! -- )
+    Waves get :> wave
+    text-box-rect x>> wave current-box>> x>> - dup 0 =
+    [ text-box-rect [ swap sgn 10 * - ] change-x ] unless
+    text-box-rect width>> wave current-box>> width>> - dup 0 =
+    [ text-box-rect [ swap sgn 20 * - ] change-width ] unless
+    2drop
+
+    text-box-rect y>> wave current-box>> y>> - dup 0 =
+    [ text-box-rect [ swap sgn 10 * - ] change-y ] unless
+    text-box-rect height>> wave current-box>> height>> - dup 0 =
+    [ text-box-rect [ swap sgn 10 * - ] change-height ] unless
+    2drop
+
+    ! wave wave-timer>> . "wave-timer<-" print
+    wave wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and
+    [
+        wave t >>change-menu drop
+        player 480 450 40 40 Rectangle boa >>box drop
+    ] when ;
+
+:: update-bullet ( player! -- )
+    Waves get :> wave
+    wave bullet-list>>
+    [| bullet i |
+        bullet time-spawn>> 0 >
+        [ bullet [ get-frame-time - ] change-time-spawn drop ]
+        [
+            bullet hitbox>>
+            [ bullet direction>> y>> get-frame-time * bullet angle-direction>> cos * + ] change-y
+            [ bullet direction>> x>> get-frame-time * bullet angle-direction>> sin * + ] change-x                
+            bullet hitbox>> y>> get-screen-height 1.6 / > bullet special-flag>> not and wave current-wave>> WAVE_2 = and
+            [
+                bullet
+                t >>special-flag
+                dup angle-facing>> 10.0 deg>rad - >>angle-direction
+                drop
+            ] when
+            player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa check-collision-recs
+            [ player [ 0.3 - ] change-hp player! ] when
+            ! drop
+        ] if
+    ] each-index
+    wave
+    [ get-frame-time - ] change-wave-timer
+    wave-timer>> 0 <=
+    [
+        wave
+        t >>box-size-changed
+        100 300 get-screen-width 200 - 200 Rectangle boa >>current-box
+        0 { } new-sequence >>bullet-list
+        drop
+    ] when ;
+
 :: update-wave ( text-box-rect! player! -- )
     Waves get :> wave
     wave box-size-changed>> not
     [
         {
-            {
-                [ wave current-wave>> WAVE_1 = ]
-                [
-                    wave
-                    350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
-                    t >>box-size-changed
-                    15.0 >>wave-timer drop
-                    14
-                    [| i |
-                        wave 
-                        dup bullet-list>>
-                        250 random 350 + get-screen-height 100 + 60 152 Rectangle boa
-                        0 -250 <Vector2>
-                        0.0 0.0
-                        i 1.2 /
-                        f
-                        <Bullet> suffix
-                        >>bullet-list drop
-                    ] each-integer
-                ]
-            }
-            {
-                [ wave current-wave>> WAVE_2 = ]
-                [
-                    wave
-                    250 300 get-screen-width 500 - 200 Rectangle boa >>current-box
-                    t >>box-size-changed
-                    18.0 >>wave-timer drop
-                    18 [ create-pizza ] each-integer
-                ]
-            }
-            {
-                [ wave current-wave>> WAVE_3 = ]
-                [
-                    wave
-                    350 300 get-screen-width 700 - 200 Rectangle boa >>current-box
-                    t >>box-size-changed
-                    20.0 >>wave-timer drop
-                    14
-                    [| i |
-                        wave 
-                        dup bullet-list>>
-                        100 random :> rand-n
-                        rand-n 2 mod 0 = 380 get-screen-width 480 - ? get-screen-height 200 + 56 339 Rectangle boa
-                        0 -320 <Vector2>
-                        0.0 rand-n 2 mod 0 = 3.97 -3.97 ?
-                        i i +
-                        f
-                        <Bullet> suffix
-                        >>bullet-list drop
-                    ] each-integer
-                ]
-            }
+            { [ wave current-wave>> WAVE_1 = ] [ set-wave-1 ] }
+            { [ wave current-wave>> WAVE_2 = ] [ set-wave-2 ] }
+            { [ wave current-wave>> WAVE_3 = ] [ set-wave-3 ] }
             [ ]
         } cond
     ]
-    [
-        text-box-rect x>> wave current-box>> x>> - dup 0 =
-        [ text-box-rect [ swap sgn 10 * - ] change-x ] unless
-        text-box-rect width>> wave current-box>> width>> - dup 0 =
-        [ text-box-rect [ swap sgn 20 * - ] change-width ] unless
-        2drop
+    [ text-box-rect player change-box-size ] if
+    wave wave-timer>> 0 > [ player update-bullet ] when ;
 
-        text-box-rect y>> wave current-box>> y>> - dup 0 =
-        [ text-box-rect [ swap sgn 10 * - ] change-y ] unless
-        text-box-rect height>> wave current-box>> height>> - dup 0 =
-        [ text-box-rect [ swap sgn 10 * - ] change-height ] unless
-        2drop
+:: draw-wave-1 ( wave bullet -- )
+    wave leg-texture>>
+    0 0 60 152 Rectangle boa
+    bullet hitbox>>
+    0 0 <Vector2>
+    bullet angle-facing>> rad>deg
+    WHITE
+    draw-texture-pro ;
 
-        ! wave wave-timer>> . "wave-timer<-" print
-        wave wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and
-        [
-            wave t >>change-menu drop
-            player 480 450 40 40 Rectangle boa >>box drop
-        ] when
+:: draw-wave-2 ( wave bullet -- )
+    wave pizza-texture>>
+    0 0 30 30 Rectangle boa
+    bullet hitbox>> x>> bullet hitbox>> y>> 30 30 Rectangle boa
+    15 15 <Vector2>
+    bullet angle-facing>> rad>deg
+    WHITE
+    draw-texture-pro ;
+    ! bullet hitbox>> WHITE draw-rectangle-rec ;
 
-    ] if
-    wave wave-timer>> 0 >
-    [
-        wave bullet-list>>
-        [| bullet i |
-            bullet time-spawn>> 0 >
-            [ bullet [ get-frame-time - ] change-time-spawn drop ]
-            [
-                bullet hitbox>>
-                [ bullet direction>> y>> get-frame-time * bullet angle-direction>> cos * + ] change-y
-                [ bullet direction>> x>> get-frame-time * bullet angle-direction>> sin * + ] change-x                
-                bullet hitbox>> y>> get-screen-height 1.6 / > bullet special-flag>> not and wave current-wave>> WAVE_2 = and
-                [
-                    bullet
-                    t >>special-flag
-                    dup angle-facing>> 10.0 deg>rad - >>angle-direction
-                    drop
-                ] when
-                player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa check-collision-recs
-                [ player [ 0.3 - ] change-hp player! ] when
-                ! drop
-            ] if
-        ] each-index
-        wave
-        [ get-frame-time - ] change-wave-timer
-        wave-timer>> 0 <=
-        [
-            wave
-            t >>box-size-changed
-            100 300 get-screen-width 200 - 200 Rectangle boa >>current-box
-            0 { } new-sequence >>bullet-list
-            drop
-        ] when
-    ] when
-    ;
+:: draw-wave-3 ( wave bullet -- )
+    350 300 get-screen-width 700 - 200 begin-scissor-mode
+    wave tower-texture>>
+    0 0 112 339 Rectangle boa
+    bullet hitbox>> x>> bullet hitbox>> y>> 112 339 Rectangle boa
+    0 0 <Vector2>
+    bullet angle-facing>>
+    WHITE
+    draw-texture-pro
+    ! bullet hitbox>> WHITE draw-rectangle-rec
+    end-scissor-mode ;
 
 :: draw-waves ( -- )
     Waves get :> wave
@@ -180,49 +204,11 @@ C: <wave-vars> wave-vars
         bullet time-spawn>> 0 <=
         [
             {
-                {
-                    [ wave current-wave>> WAVE_1 = ]
-                    [
-                        wave leg-texture>>
-                        0 0 60 152 Rectangle boa
-                        bullet hitbox>>
-                        0 0 <Vector2>
-                        bullet angle-facing>> 180 * pi /
-                        WHITE
-                        draw-texture-pro
-                    ]
-                }
-                {
-                    [ wave current-wave>> WAVE_2 = ]
-                    [ 
-                        wave pizza-texture>>
-                        0 0 30 30 Rectangle boa
-                        bullet hitbox>> x>> bullet hitbox>> y>> 30 30 Rectangle boa
-                        15 15 <Vector2>
-                        bullet angle-facing>> 180 * pi /
-                        WHITE
-                        draw-texture-pro
-                        ! bullet hitbox>> WHITE draw-rectangle-rec
-                    ]
-                }
-                {
-                    [ wave current-wave>> WAVE_3 = ]
-                    [ 
-                        350 300 get-screen-width 700 - 200 begin-scissor-mode
-                        wave tower-texture>>
-                        0 0 112 339 Rectangle boa
-                        bullet hitbox>> x>> bullet hitbox>> y>> 112 339 Rectangle boa
-                        0 0 <Vector2> ! 56 169.5 <Vector2>
-                        bullet angle-facing>>
-                        WHITE
-                        draw-texture-pro
-                        ! bullet hitbox>> WHITE draw-rectangle-rec
-                        end-scissor-mode
-                    ]
-                }
+                { [ wave current-wave>> WAVE_1 = ] [ wave bullet draw-wave-1 ] }
+                { [ wave current-wave>> WAVE_2 = ] [ wave bullet draw-wave-2 ] }
+                { [ wave current-wave>> WAVE_3 = ] [ wave bullet draw-wave-3 ] }
                 [ ]
             } cond
-            ! bullet hitbox>> WHITE draw-rectangle-rec
         ] when
     ] each ;
 

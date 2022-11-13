@@ -1,6 +1,6 @@
 USING: accessors button combinators formatting indices kernel 
-math math.constants namespaces player random raylib sequences
-splitting strings unicode waves ;
+math namespaces player random raylib sequences
+strings unicode utils waves ;
 IN: menu
 
 INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS MENU_DIALOGUE MENU_BATTLE ;
@@ -50,7 +50,7 @@ CONSTANT: MENU_TEXT
 {
     "Flag of Sicily but it's a quirky|RPG battle."
     "Smells like Italian stereotypes...|and pizza pie."
-    "Pack it, box it, flip it, top it~"
+    "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
     ! "When the moon hits your eye|like a big Pizza pie, that's AMORE"
     "Test text 2"
     "Test text 3"
@@ -251,9 +251,6 @@ CONSTANT: PRE_BATTLE_TEXT_EN
             current-text i final-text nth 1string string-append current-text!
         ] if
     ] each-integer ;
-
-! Todo: Move this function to a "utils" file
-: count-char ( str substr -- n ) split-subseq length 1 - ; inline
 
 :: draw-menu ( player-hp max-hp boss-current-hp boss-max-hp -- )
     Menu get :> menu
