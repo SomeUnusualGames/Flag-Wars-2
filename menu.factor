@@ -3,7 +3,7 @@ math namespaces player random raylib sequences
 strings unicode utils waves ;
 IN: menu
 
-INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_ITEMS MENU_DIALOGUE MENU_BATTLE ;
+INDEX: MENU_NONE MENU_ATTACK MENU_ACT MENU_TEXT_ACT MENU_ITEMS MENU_DIALOGUE MENU_BATTLE ;
 
 TUPLE: item-vars
     { name string }
@@ -49,25 +49,31 @@ C: <menu-vars> menu-vars
 CONSTANT: MENU_TEXT
 {
     "Flag of Sicily but it's a quirky|RPG battle."
-    "Smells like Italian stereotypes...|and pizza pie."
+    "Smells like Italian stereotypes...|and pizza."
     "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
-    ! "When the moon hits your eye|like a big Pizza pie, that's AMORE"
-    "Test text 2"
-    "Test text 3"
+    "When the moon hits your eye|like a big pizza pie, that's AMORE!"
+    ! "Test text 2"
+    ! "Test text 3"
 }
 
 CONSTANT: PRE_BATTLE_TEXT_IT
 {
+    "Ah...|grazie..." ! Flirt 1
     "Lasciami in|pace..." ! Attack 1
     "Non voglio|davvero|essere qui..." ! Attack 2
-    "..."
+    "Per favore,|basta." ! Attack 3
+}
+
+CONSTANT: ACT_TEXT
+{
+    "FLAG OF SICILY - 1 ATK 1 DEF|Just a lower quality version of|the great Isle of Man flag." ! Check
 }
 
 CONSTANT: PRE_BATTLE_TEXT_EN
 {
     "Leave me|alone..."
     "I really|don't want|to be here..."
-    "..."
+    "Please|stop it."
 }
 
 : init-menu ( -- )
@@ -81,7 +87,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     0.0
     f
     ! Text {
-    0 0 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
+    0 1 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
     ! }
     ! Items {
     0 ! Current item selected (Items)
@@ -93,7 +99,17 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     init-buttons
     init-waves ;
 
-:: update-text ( is-dialogue -- )
+:: set-dialogue ( menu! -- )
+    menu
+    dup text>>
+    dup selected-text-dialogue>> PRE_BATTLE_TEXT_IT ?nth :> current-text
+    current-text f = "" current-text ? >>current-text
+    0 >>current-character
+    "" >>printed-text
+    current-text>> length 0 = [ MENU_BATTLE >>current-state ] when
+    drop ;
+
+:: update-text ( is-dialogue is-act -- )
     Menu get text>> :> text
     text current-character>> text current-text>> length <
     [   
@@ -107,14 +123,32 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         ] if
     ]
     [
-        is-dialogue KEY_Z is-key-pressed and
-        [ Menu get MENU_BATTLE >>current-state drop ] when
+        KEY_Z is-key-pressed
+        [
+            Menu get
+            is-act
+            [ MENU_DIALOGUE >>current-state dup set-dialogue ]
+            [ MENU_BATTLE >>current-state ] if            
+            drop
+        ] when
     ] if ;
+
+:: set-attack ( wave! -- )
+    wave
+    dup set-random-wave>>
+    [
+        WAVE_3 random 1 + :> new-wave!
+        [ new-wave wave current-wave>> = ]
+        [ WAVE_3 random 1 + new-wave! ] while
+        new-wave >>current-wave
+    ]
+    [ [ 1 + ] change-current-wave ] if
+    f >>change-menu drop ;
 
 :: update-menu-none ( boss! -- )
     Menu get :> menu
     Waves get :> wave
-    f update-text
+    f f update-text
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu current-button>> 2 < and
     [ menu [ 1 + ] change-current-button drop ] when
 
@@ -128,7 +162,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
                 [ menu current-button>> BUTTON_ATTACK = ] 
                 [ 
                     menu MENU_ATTACK >>current-state drop
-                    wave [ 1 + ] change-current-wave f >>change-menu drop
+                    wave set-attack
                     boss 100 random 150 + >>damage
                     dup [ boss damage>> - ] change-hp boss!
                     drop
@@ -160,6 +194,26 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     [ 
         menu MENU_NONE >>current-state
         items>> 0 >>item-index drop
+    ] when 
+
+    KEY_Z is-key-pressed is-act and
+    [
+        {
+            {
+                [ menu items>> item-index>> 0 = ]
+                [
+                    ! TODO: Set text to print on box, and the dialogue after that
+                    menu
+                    MENU_TEXT_ACT >>current-state
+                    text>>
+                    0 ACT_TEXT nth >>current-text
+                    0 >>current-character
+                    "" >>printed-text drop
+                    Waves get set-attack
+                ]
+            }
+            [ ]
+        } cond
     ] when ;
 
 :: update-menu-attack ( boss! -- )
@@ -176,18 +230,15 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     dup attack-action-done>> 
     [
         dup trans-timer>> 0 >
-        [ [ get-frame-time - ] change-trans-timer ]
+        [ [ get-frame-time - ] change-trans-timer drop ]
         [
             MENU_DIALOGUE >>current-state
-            dup text>>
-            dup selected-text-dialogue>> PRE_BATTLE_TEXT_IT nth >>current-text
-            0 >>current-character
-            "" >>printed-text
-            drop
+            dup set-dialogue
             520 -150 106 163 Rectangle boa >>player-leg-rect
             f >>attack-action-done
+            drop
         ] if
-        drop
+        ! drop
     ]
     [
         dup player-leg-rect>>
@@ -197,6 +248,24 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         drop
     ] if ;
 
+:: update-menu-battle ( menu! player! -- )
+    menu text-box-rect>> player update-wave
+    menu text-box-rect>> update-player
+    Waves get change-menu>>
+    [
+        Waves get f >>box-size-changed drop
+        menu
+        MENU_NONE >>current-state
+        dup text>>
+        0 >>current-character
+        "" >>printed-text
+        [ 1 + ] change-selected-text-menu
+        [ 1 + ] change-selected-text-dialogue
+        dup selected-text-menu>> MENU_TEXT ?nth :> current-text
+        current-text f = "Flag of Sicily" current-text ? >>current-text >>text
+        drop
+    ] when ;
+
 :: update-menu ( boss! player! -- )
     Menu get :> menu
     {
@@ -204,27 +273,9 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         { [ menu current-state>> MENU_ATTACK = ] [ boss update-menu-attack ] }
         { [ menu current-state>> MENU_ITEMS = ] [ f update-menu-items ] }
         { [ menu current-state>> MENU_ACT = ] [ t update-menu-items ] }
-        { [ menu current-state>> MENU_DIALOGUE = ] [ t update-text ] }
-        { 
-            [ menu current-state>> MENU_BATTLE = ]
-            [
-                menu text-box-rect>> player update-wave
-                menu text-box-rect>> update-player
-                Waves get change-menu>>
-                [
-                    Waves get f >>box-size-changed drop
-                    menu
-                    MENU_NONE >>current-state
-                    dup text>>
-                    0 >>current-character
-                    "" >>printed-text
-                    [ 1 + ] change-selected-text-menu
-                    [ 1 + ] change-selected-text-dialogue
-                    dup selected-text-menu>> MENU_TEXT nth >>current-text >>text
-                    drop
-                ] when
-            ]
-        }
+        { [ menu current-state>> MENU_TEXT_ACT = ] [ f t update-text ] }
+        { [ menu current-state>> MENU_DIALOGUE = ] [ t f update-text ] }
+        { [ menu current-state>> MENU_BATTLE = ] [ menu player update-menu-battle ] }
         [ ]
     } cond ;
 
@@ -272,7 +323,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
 
     {
         {
-            [ menu current-state>> MENU_NONE = ]
+            [ menu current-state>> dup MENU_NONE = swap MENU_TEXT_ACT = or ]
             [ text printed-text>> 150 330 40 WHITE draw-text-new-line ]
         }
         {
