@@ -46,6 +46,15 @@ TUPLE: menu-vars
     { items item-list } ;
 C: <menu-vars> menu-vars
 
+! This sucks. Awful. Horrible. Please don't tell anyone how I code.
+:: get-item ( n -- item )
+    {
+        { [ n 0 = ] [ Menu get items>> item1>> ] }
+        { [ n 1 = ] [ Menu get items>> item2>> ] }
+        { [ n 2 = ] [ Menu get items>> item3>> ] }
+        { [ n 3 = ] [ Menu get items>> item4>> ] }
+    } cond ;
+
 CONSTANT: MENU_TEXT
 {
     "Flag of Sicily but it's a quirky|RPG battle."
@@ -68,6 +77,8 @@ CONSTANT: ACT_TEXT
 {
     "FLAG OF SICILY - 1 ATK 1 DEF|Just a lower quality version of|the great Isle of Man flag." ! Check
 }
+
+CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
 
 CONSTANT: PRE_BATTLE_TEXT_EN
 {
@@ -173,7 +184,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         } cond
     ] when ;
 
-:: update-menu-items ( is-act -- )
+:: update-menu-items ( is-act player! -- )
     Menu get :> menu
     menu items>> item-index>> :> new-index!
 
@@ -196,24 +207,42 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         items>> 0 >>item-index drop
     ] when 
 
-    KEY_Z is-key-pressed is-act and
+    KEY_Z is-key-pressed
     [
-        {
+        is-act
+        [
             {
-                [ menu items>> item-index>> 0 = ]
-                [
-                    ! TODO: Set text to print on box, and the dialogue after that
-                    menu
-                    MENU_TEXT_ACT >>current-state
-                    text>>
-                    0 ACT_TEXT nth >>current-text
-                    0 >>current-character
-                    "" >>printed-text drop
-                    Waves get set-attack
-                ]
-            }
-            [ ]
-        } cond
+                {
+                    [ menu items>> item-index>> 0 = ]
+                    [
+                        menu
+                        MENU_TEXT_ACT >>current-state
+                        text>>
+                        0 ACT_TEXT nth >>current-text
+                        0 >>current-character
+                        "" >>printed-text drop
+                        Waves get set-attack
+                    ]
+                }
+                [ ]
+            } cond
+        ]
+        [
+            menu items>> item-index>> get-item :> selected-item!
+            selected-item name>> length 0 >
+            [
+                menu
+                MENU_TEXT_ACT >>current-state
+                text>>
+                selected-item name>> selected-item health>> ITEM-TEXT sprintf >>current-text
+                0 >>current-character
+                "" >>printed-text drop
+                player dup hp>> selected-item health>> + >>hp
+                hp>> 99 > [ player 99 >>hp drop ] when
+                selected-item "" >>name drop
+                Waves get set-attack
+            ] when
+        ] if
     ] when ;
 
 :: update-menu-attack ( boss! -- )
@@ -271,8 +300,8 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     {
         { [ menu current-state>> MENU_NONE = ] [ boss update-menu-none ] }
         { [ menu current-state>> MENU_ATTACK = ] [ boss update-menu-attack ] }
-        { [ menu current-state>> MENU_ITEMS = ] [ f update-menu-items ] }
-        { [ menu current-state>> MENU_ACT = ] [ t update-menu-items ] }
+        { [ menu current-state>> MENU_ITEMS = ] [ f player update-menu-items ] }
+        { [ menu current-state>> MENU_ACT = ] [ t player update-menu-items ] }
         { [ menu current-state>> MENU_TEXT_ACT = ] [ f t update-text ] }
         { [ menu current-state>> MENU_DIALOGUE = ] [ t f update-text ] }
         { [ menu current-state>> MENU_BATTLE = ] [ menu player update-menu-battle ] }

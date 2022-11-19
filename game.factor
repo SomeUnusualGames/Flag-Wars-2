@@ -26,9 +26,7 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
         begin-drawing
         draw-background
         draw-boss
-        Player get dup hp>> swap max-hp>>
-        Boss get dup current-hp>> swap max-hp>>
-        draw-menu
+        Player get dup hp>> swap max-hp>> Boss get dup current-hp>> swap max-hp>> draw-menu
         end-drawing
         window-should-close not
     ] loop ;
