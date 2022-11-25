@@ -17,25 +17,28 @@ C: <Bullet> Bullet
 TUPLE: wave-vars
     { current-wave integer }
     { current-box Rectangle }
+    { damage float }
     { wave-timer float }
     { box Rectangle }
     { leg-texture Texture2D }
     { pizza-texture Texture2D }
     { tower-texture Texture2D }
     { bullet-list sequence }
-    { box-size-changed boolean } 
+    { box-size-changed boolean }
+    { set-random-wave boolean }
     { change-menu boolean } ;
 C: <wave-vars> wave-vars
 
 : init-waves ( -- )
     WAVE_NONE
     100 300 get-screen-width 200 - 200 Rectangle boa
+    0.3
     0.0
     105 305 get-screen-width 210 - 190 Rectangle boa
     "assets/graphics/Sicily_leg.png" load-texture
     "assets/graphics/pizza.png" load-texture
     "assets/graphics/pisa_tower.png" load-texture
-    0 { } new-sequence f f <wave-vars> Waves set ;
+    0 { } new-sequence f f f <wave-vars> Waves set ;
 
 :: set-wave-1 ( -- )
     Waves get
@@ -115,12 +118,19 @@ C: <wave-vars> wave-vars
     ! wave wave-timer>> . "wave-timer<-" print
     wave wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and
     [
-        wave t >>change-menu drop
+        wave
+        t >>change-menu
+        dup current-wave>> WAVE_3 =
+        [ t >>set-random-wave ] when
+        drop
         player 480 450 40 40 Rectangle boa >>box drop
     ] when ;
 
-:: update-bullet ( player! -- )
+:: update-bullet ( player! boss-is-flustered -- )
     Waves get :> wave
+    boss-is-flustered
+    [ wave 0.1 >>damage drop ]
+    [ wave 0.3 >>damage drop ] if
     wave bullet-list>>
     [| bullet i |
         bullet time-spawn>> 0 >
@@ -137,7 +147,7 @@ C: <wave-vars> wave-vars
                 drop
             ] when
             player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa check-collision-recs
-            [ player [ 0.3 - ] change-hp player! ] when
+            [ player [ wave damage>> - ] change-hp player! ] when
             ! drop
         ] if
     ] each-index
@@ -152,7 +162,7 @@ C: <wave-vars> wave-vars
         drop
     ] when ;
 
-:: update-wave ( text-box-rect! player! -- )
+:: update-wave ( text-box-rect! player! boss-is-flustered -- )
     Waves get :> wave
     wave box-size-changed>> not
     [
@@ -164,7 +174,7 @@ C: <wave-vars> wave-vars
         } cond
     ]
     [ text-box-rect player change-box-size ] if
-    wave wave-timer>> 0 > [ player update-bullet ] when ;
+    wave wave-timer>> 0 > [ player boss-is-flustered update-bullet ] when ;
 
 :: draw-wave-1 ( wave bullet -- )
     wave leg-texture>>

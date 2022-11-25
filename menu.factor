@@ -43,7 +43,9 @@ TUPLE: menu-vars
     { trans-timer float }
     { attack-action-done boolean }
     { text text-vars }
-    { items item-list } ;
+    { items item-list }
+    { boss-is-flustered boolean }
+    { boss-is-annoyed boolean } ;
 C: <menu-vars> menu-vars
 
 ! This sucks. Awful. Horrible. Please don't tell anyone how I code.
@@ -57,6 +59,7 @@ C: <menu-vars> menu-vars
 
 CONSTANT: MENU_TEXT
 {
+    "Someone looks flustered..."
     "Flag of Sicily but it's a quirky|RPG battle."
     "Smells like Italian stereotypes...|and pizza."
     "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
@@ -67,7 +70,9 @@ CONSTANT: MENU_TEXT
 
 CONSTANT: PRE_BATTLE_TEXT_IT
 {
-    "Ah...|grazie..." ! Flirt 1
+    "Ah...|grazie..." ! Flirt
+    "Ehhh..." ! Flirt
+    "..." ! Flirt
     "Lasciami in|pace..." ! Attack 1
     "Non voglio|davvero|essere qui..." ! Attack 2
     "Per favore,|basta." ! Attack 3
@@ -76,16 +81,11 @@ CONSTANT: PRE_BATTLE_TEXT_IT
 CONSTANT: ACT_TEXT
 {
     "FLAG OF SICILY - 1 ATK 1 DEF|Just a lower quality version of|the great Isle of Man flag." ! Check
+    "You told Medusa she has|beautiful legs." ! Flirt 1
+    "You couldn't think of any|compliment..."
 }
 
 CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
-
-CONSTANT: PRE_BATTLE_TEXT_EN
-{
-    "Leave me|alone..."
-    "I really|don't want|to be here..."
-    "Please|stop it."
-}
 
 : init-menu ( -- )
     BUTTON_ATTACK ! current button
@@ -98,7 +98,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     0.0
     f
     ! Text {
-    0 1 0 0.04 0.04 0 MENU_TEXT nth "" <text-vars>
+    1 3 0 0.04 0.04 1 MENU_TEXT nth "" <text-vars>
     ! }
     ! Items {
     0 ! Current item selected (Items)
@@ -106,7 +106,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     "Prosciutto" 25 f <item-vars> "Pizza pie" 50 f <item-vars>
     <item-list>
     ! }
-    <menu-vars> Menu set
+    f f <menu-vars> Menu set
     init-buttons
     init-waves ;
 
@@ -121,7 +121,8 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     drop ;
 
 :: update-text ( is-dialogue is-act -- )
-    Menu get text>> :> text
+    Menu get :> menu
+    menu text>> :> text
     text current-character>> text current-text>> length <
     [   
         text delay>> 0 >
@@ -136,9 +137,13 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     [
         KEY_Z is-key-pressed
         [
-            Menu get
+            menu
             is-act
-            [ MENU_DIALOGUE >>current-state dup set-dialogue ]
+            [
+                menu text>> selected-text-dialogue>> 0 =
+                [ t >>boss-is-flustered ] when
+                MENU_DIALOGUE >>current-state dup set-dialogue
+            ]
             [ MENU_BATTLE >>current-state ] if            
             drop
         ] when
@@ -211,20 +216,44 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     [
         is-act
         [
+            menu MENU_TEXT_ACT >>current-state drop
             {
                 {
                     [ menu items>> item-index>> 0 = ]
                     [
                         menu
-                        MENU_TEXT_ACT >>current-state
-                        text>>
+                        dup text>>
                         0 ACT_TEXT nth >>current-text
                         0 >>current-character
                         "" >>printed-text drop
                         Waves get set-attack
+                        drop
                     ]
                 }
-                [ ]
+                {
+                    [ menu items>> item-index>> 2 = ]
+                    [
+                        menu
+                        dup text>>
+                        1 ACT_TEXT nth >>current-text
+                        0 >>current-character
+                        "" >>printed-text drop
+                        dup boss-is-flustered>>
+                        [
+                            menu text>>
+                            2 ACT_TEXT nth >>current-text
+                            drop
+                        ]
+                        [
+                            menu text>>
+                            0 >>selected-text-dialogue
+                            -1 >>selected-text-menu
+                            drop
+                        ] if
+                        Waves get set-attack
+                        drop
+                    ]
+                }
             } cond
         ]
         [
@@ -278,7 +307,7 @@ CONSTANT: PRE_BATTLE_TEXT_EN
     ] if ;
 
 :: update-menu-battle ( menu! player! -- )
-    menu text-box-rect>> player update-wave
+    menu text-box-rect>> player menu boss-is-flustered>> update-wave
     menu text-box-rect>> update-player
     Waves get change-menu>>
     [
@@ -288,8 +317,15 @@ CONSTANT: PRE_BATTLE_TEXT_EN
         dup text>>
         0 >>current-character
         "" >>printed-text
-        [ 1 + ] change-selected-text-menu
-        [ 1 + ] change-selected-text-dialogue
+        menu boss-is-flustered>>
+        [
+            2 random 1 + >>selected-text-dialogue
+            0 >>selected-text-menu
+        ]
+        [
+            [ 1 + ] change-selected-text-menu
+            [ 1 + ] change-selected-text-dialogue
+        ] if
         dup selected-text-menu>> MENU_TEXT ?nth :> current-text
         current-text f = "Flag of Sicily" current-text ? >>current-text >>text
         drop
