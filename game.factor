@@ -1,4 +1,4 @@
-USING: accessors boss classes.struct kernel menu namespaces player raylib ;
+USING: accessors boss classes.struct kernel math menu namespaces player raylib ;
 IN: game
 
 CONSTANT: SICILY-RED S{ Color f 218 18 26 255 }
@@ -21,12 +21,22 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
 
 : update-draw-game ( -- )
     [
-        update-boss
-        Boss get Player get update-menu
+        Player get hp>> 0 >
+        [
+            update-boss
+            Boss get Player get update-menu
+        ]
+        [
+            Player get alpha>> 0 > [ Player get [ 1 - ] change-alpha drop ] when
+        ] if
         begin-drawing
         draw-background
-        Menu get boss-is-flustered>> draw-boss
-        Player get dup hp>> swap max-hp>> Boss get dup current-hp>> swap max-hp>> draw-menu
+        ! Player get hp>> 0 >
+        ! [
+            Menu get boss-is-flustered>> draw-boss
+            Player get dup hp>> swap max-hp>> Boss get dup current-hp>> swap max-hp>> draw-menu
+            Player get hp>> 0 <= [ "Game Over! Press ESCAPE to quit." 100 10 40 WHITE draw-text ] when
+        ! ] when
         end-drawing
         window-should-close not
     ] loop ;

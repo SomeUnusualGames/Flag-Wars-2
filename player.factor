@@ -9,7 +9,8 @@ TUPLE: player-vars
     { size Vector2 }
     { hp float }
     { max-hp float }
-    { angle float } ;
+    { angle float } 
+    { alpha integer } ;
 C: <player-vars> player-vars
 
 CONSTANT: PLAYER-SPEED 3.0
@@ -19,8 +20,8 @@ CONSTANT: PLAYER-SPEED 3.0
     480 450 40 40 Rectangle boa
     15 10 <Vector2>
     99 99
-    0.0
-    <player-vars> Player set ;
+    0.0 255 <player-vars> Player set ;
+
 
 :: player-movement ( player! text-box -- )
     player angle>> :> new-angle!
@@ -91,6 +92,6 @@ CONSTANT: PLAYER-SPEED 3.0
     player box>>
     20 20 <Vector2>
     player angle>>
-    WHITE
+    255 255 255 player alpha>> Color boa
     draw-texture-pro ;
     ! player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa WHITE draw-rectangle-rec
