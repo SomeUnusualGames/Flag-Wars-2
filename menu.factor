@@ -64,8 +64,6 @@ CONSTANT: MENU_TEXT
     "Smells like Italian stereotypes...|and pizza."
     "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
     "When the moon hits your eye|like a big pizza pie, that's AMORE!"
-    ! "Test text 2"
-    ! "Test text 3"
 }
 
 CONSTANT: PRE_BATTLE_TEXT_IT
