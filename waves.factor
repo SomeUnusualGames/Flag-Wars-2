@@ -126,11 +126,14 @@ C: <wave-vars> wave-vars
         player 480 450 40 40 Rectangle boa >>box drop
     ] when ;
 
-:: update-bullet ( player! boss-is-flustered -- )
+:: update-bullet ( player! boss-is-flustered boss-is-annoyed -- )
     Waves get :> wave
-    boss-is-flustered
-    [ wave 0.1 >>damage drop ]
-    [ wave 0.3 >>damage drop ] if
+    wave
+    {
+        { [ boss-is-flustered ] [ 0.1 ] }
+        { [ boss-is-annoyed ] [ 0.6 ] }
+        [ 0.3 ]
+    } cond >>damage drop
     wave bullet-list>>
     [| bullet i |
         bullet time-spawn>> 0 >
@@ -162,7 +165,7 @@ C: <wave-vars> wave-vars
         drop
     ] when ;
 
-:: update-wave ( text-box-rect! player! boss-is-flustered -- )
+:: update-wave ( text-box-rect! player! boss-is-flustered boss-is-annoyed -- )
     Waves get :> wave
     wave box-size-changed>> not
     [
@@ -174,7 +177,7 @@ C: <wave-vars> wave-vars
         } cond
     ]
     [ text-box-rect player change-box-size ] if
-    wave wave-timer>> 0 > [ player boss-is-flustered update-bullet ] when ;
+    wave wave-timer>> 0 > [ player boss-is-flustered boss-is-annoyed update-bullet ] when ;
 
 :: draw-wave-1 ( wave bullet -- )
     wave leg-texture>>

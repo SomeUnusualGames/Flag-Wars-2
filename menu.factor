@@ -60,6 +60,7 @@ C: <menu-vars> menu-vars
 CONSTANT: MENU_TEXT
 {
     "Someone looks flustered..."
+    "Someone looks angry..."
     "Flag of Sicily but it's a quirky|RPG battle."
     "Smells like Italian stereotypes...|and pizza."
     "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
@@ -69,8 +70,11 @@ CONSTANT: MENU_TEXT
 CONSTANT: PRE_BATTLE_TEXT_IT
 {
     "Ah...|grazie..." ! Flirt
-    "Ehhh..." ! Flirt
+    "Uhmm..." ! Flirt
     "..." ! Flirt
+    "Grrr..." ! Insult
+    "Hmpf..." ! Insult
+    "Beh..." ! Insult
     "Lasciami in|pace..." ! Attack 1
     "Non voglio|davvero|essere qui..." ! Attack 2
     "Per favore,|basta." ! Attack 3
@@ -81,6 +85,10 @@ CONSTANT: ACT_TEXT
     "FLAG OF SICILY - 1 ATK 1 DEF|Just a lower quality version of|the great Isle of Man flag." ! Check
     "You told Medusa she has|beautiful legs." ! Flirt 1
     "You couldn't think of any|compliment..."
+    "You told Medusa her legs|are not that good looking."
+    "You couldn't think of any|insult..."
+    "She's too distracted to|notice your insult..."
+    "You tried to compliment her|but she's not listening..."
 }
 
 CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
@@ -96,7 +104,7 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     0.0
     f
     ! Text {
-    1 3 0 0.04 0.04 1 MENU_TEXT nth "" <text-vars>
+    1 6 0 0.04 0.04 2 MENU_TEXT nth "" <text-vars>
     ! }
     ! Items {
     0 ! Current item selected (Items)
@@ -138,8 +146,8 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
             menu
             is-act
             [
-                menu text>> selected-text-dialogue>> 0 =
-                [ t >>boss-is-flustered ] when
+                menu text>> selected-text-dialogue>> 0 = [ t >>boss-is-flustered ] when
+                menu text>> selected-text-dialogue>> 3 = [ t >>boss-is-annoyed ] when
                 MENU_DIALOGUE >>current-state dup set-dialogue
             ]
             [ MENU_BATTLE >>current-state ] if            
@@ -236,22 +244,55 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
                         1 ACT_TEXT nth >>current-text
                         0 >>current-character
                         "" >>printed-text drop
-                        dup boss-is-flustered>>
-                        [
-                            menu text>>
-                            2 ACT_TEXT nth >>current-text
-                            drop
-                        ]
-                        [
-                            menu text>>
-                            0 >>selected-text-dialogue
-                            -1 >>selected-text-menu
-                            drop
-                        ] if
+                        {
+                            {
+                                [ menu boss-is-annoyed>> ]
+                                [ menu text>> 6 ACT_TEXT nth >>current-text drop ]
+                            }
+                            {
+                                [ menu boss-is-flustered>> ]
+                                [ menu text>> 2 ACT_TEXT nth >>current-text drop ]
+                            }
+                            [ 
+                                menu text>>
+                                0 >>selected-text-dialogue
+                                -1 >>selected-text-menu
+                                drop
+                            ]
+                        } cond
                         Waves get set-attack
                         drop
                     ]
                 }
+                {
+                    [ menu items>> item-index>> 1 = ]
+                    [
+                        menu
+                        dup text>>
+                        3 ACT_TEXT nth >>current-text
+                        0 >>current-character
+                        "" >>printed-text drop
+                        {
+                            {
+                                [ menu boss-is-flustered>> ]
+                                [ menu text>> 5 ACT_TEXT nth >>current-text drop ]
+                            }
+                            {
+                                [ menu boss-is-annoyed>> ]
+                                [ menu text>> 4 ACT_TEXT nth >>current-text drop ]
+                            }
+                            [ 
+                                menu text>>
+                                3 >>selected-text-dialogue
+                                0 >>selected-text-menu
+                                drop
+                            ]
+                        } cond
+                        Waves get set-attack
+                        drop
+                    ]
+                }
+                [ ]
             } cond
         ]
         [
@@ -305,7 +346,7 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     ] if ;
 
 :: update-menu-battle ( menu! player! -- )
-    menu text-box-rect>> player menu boss-is-flustered>> update-wave
+    menu text-box-rect>> player menu boss-is-flustered>> menu boss-is-annoyed>> update-wave
     menu text-box-rect>> update-player
     Waves get change-menu>>
     [
@@ -315,15 +356,20 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
         dup text>>
         0 >>current-character
         "" >>printed-text
-        menu boss-is-flustered>>
-        [
-            2 random 1 + >>selected-text-dialogue
-            0 >>selected-text-menu
-        ]
-        [
-            [ 1 + ] change-selected-text-menu
-            [ 1 + ] change-selected-text-dialogue
-        ] if
+        {
+            { 
+                [ menu boss-is-flustered>> ]
+                [ 2 random 1 + >>selected-text-dialogue 0 >>selected-text-menu ]
+            }
+            {
+                [ menu boss-is-annoyed>> ]
+                [ 3 random 3 + >>selected-text-dialogue 1 >>selected-text-menu ]
+            }
+            [
+                [ 1 + ] change-selected-text-menu
+                [ 1 + ] change-selected-text-dialogue
+            ]
+        } cond
         dup selected-text-menu>> MENU_TEXT ?nth :> current-text
         current-text f = "Flag of Sicily" current-text ? >>current-text >>text
         drop
@@ -416,7 +462,7 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
                 ]
                 [
                     0 "Check" draw-item-name
-                    1 "Tease" draw-item-name
+                    1 "Insult" draw-item-name
                     2 "Flirt" draw-item-name
                 ] if
 

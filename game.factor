@@ -31,7 +31,7 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
         [ Player get alpha>> 0 > [ Player get [ 1 - ] change-alpha drop ] when ] if
         begin-drawing
         draw-background
-        Menu get boss-is-flustered>> draw-boss
+        Menu get boss-is-flustered>> Menu get boss-is-annoyed>> draw-boss
         Player get dup hp>> swap max-hp>> Boss get dup current-hp>> swap max-hp>> draw-menu
         Player get hp>> 0 <= [ "Game Over! Press ESCAPE to quit." 100 10 40 WHITE draw-text ] when
         Boss get hp>> 0 <= [ "You won! Press ESCAPE to quit." 150 330 40 WHITE draw-text ] when
