@@ -35,6 +35,12 @@ C: <text-vars> text-vars
 TUPLE: menu-vars
     { current-button integer }
     { current-state integer }
+    { beep-sound Sound }
+    { select-sound Sound }
+    { back-sound Sound }
+    { letter-sound Sound }
+    { boss-damage Sound }
+    { hp-up Sound }
     { player-cursor Texture2D }
     { bubble-speech Texture2D }
     { player-leg Texture2D }
@@ -65,6 +71,7 @@ CONSTANT: MENU_TEXT
     "Smells like Italian stereotypes...|and pizza."
     "What's your least favourite|country, Italy or France?|(nobody ever says Italy)"
     "When the moon hits your eye|like a big pizza pie, that's AMORE!"
+    "Se il ragazzo delle consegne|dice \"pizza time\", non pagare."
 }
 
 CONSTANT: PRE_BATTLE_TEXT_IT
@@ -96,6 +103,12 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
 : init-menu ( -- )
     BUTTON_ATTACK ! current button
     MENU_NONE ! current state
+    "assets/sfx/ui_beep.wav" load-sound
+    "assets/sfx/ui_select.wav" load-sound
+    "assets/sfx/ui_back.wav" load-sound
+    "assets/sfx/ui_letter.wav" load-sound
+    "assets/sfx/boss_damage.wav" load-sound
+    "assets/sfx/hp_up.wav" load-sound
     "assets/graphics/The_armoured_triskelion_on_the_flag_of_the_Isle_of_Man.png" load-texture
     "assets/graphics/bubble.png" load-texture
     "assets/graphics/Isle-of-Man-Leg.png" load-texture
@@ -104,7 +117,7 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     0.0
     f
     ! Text {
-    1 6 0 0.04 0.04 2 MENU_TEXT nth "" <text-vars>
+    2 6 0 0.04 0.04 2 MENU_TEXT nth "" <text-vars>
     ! }
     ! Items {
     0 ! Current item selected (Items)
@@ -114,7 +127,12 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     ! }
     f f <menu-vars> Menu set
     init-buttons
-    init-waves ;
+    init-waves
+    Menu get
+    dup select-sound>> 1.4 set-sound-pitch
+    dup letter-sound>> 0.2 set-sound-volume
+    dup back-sound>> 1.4 set-sound-pitch
+    boss-damage>> 0.2 set-sound-volume ;
 
 :: set-dialogue ( menu! -- )
     menu
@@ -134,8 +152,14 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
         text delay>> 0 >
         [ text [ get-frame-time - ] change-delay drop ]
         [
+            text current-character>> text current-text>> nth 1string :> current-char
+            current-char " " = 
+            [ 
+                menu letter-sound>> is-sound-playing [ menu letter-sound>> stop-sound ] when
+                menu letter-sound>> play-sound
+            ] unless
             text
-            text printed-text>> text current-character>> text current-text>> nth 1string string-append >>printed-text
+            text printed-text>> current-char string-append >>printed-text
             [ 1 + ] change-current-character
             dup max-delay>> >>delay drop
         ] if
@@ -172,13 +196,14 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     Waves get :> wave
     f f update-text
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu current-button>> 2 < and
-    [ menu [ 1 + ] change-current-button drop ] when
+    [ menu [ 1 + ] change-current-button beep-sound>> play-sound ] when
 
     KEY_A is-key-pressed KEY_LEFT is-key-pressed or menu current-button>> 0 > and
-    [ menu [ 1 - ] change-current-button drop ] when
+    [ menu [ 1 - ] change-current-button beep-sound>> play-sound ] when
 
     KEY_Z is-key-pressed
     [
+        menu select-sound>> play-sound
         {
             { 
                 [ menu current-button>> BUTTON_ATTACK = ] 
@@ -200,14 +225,14 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     menu items>> item-index>> :> new-index!
 
     KEY_D is-key-pressed KEY_RIGHT is-key-pressed or menu items>> item-index>> 2 mod 0 = and
-    [ menu items>> item-index>> 1 + new-index! ] when
+    [ menu dup beep-sound>> play-sound items>> item-index>> 1 + new-index! ] when
     KEY_A is-key-pressed KEY_LEFT is-key-pressed or menu items>> item-index>> 2 mod 0 = not and
-    [ menu items>> item-index>> 1 - new-index! ] when
+    [ menu dup beep-sound>> play-sound items>> item-index>> 1 - new-index! ] when
 
     KEY_W is-key-pressed KEY_UP is-key-pressed or menu items>> item-index>> 2 >= and
-    [ menu items>> item-index>> 2 - new-index! ] when
+    [ menu dup beep-sound>> play-sound items>> item-index>> 2 - new-index! ] when
     KEY_S is-key-pressed KEY_DOWN is-key-pressed or menu items>> item-index>> 2 < and
-    [ menu items>> item-index>> 2 + new-index! ] when
+    [ menu dup beep-sound>> play-sound items>> item-index>> 2 + new-index! ] when
 
     is-act not is-act new-index 3 < and or
     [ menu items>> new-index >>item-index drop ] when
@@ -215,11 +240,13 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
     KEY_X is-key-pressed
     [ 
         menu MENU_NONE >>current-state
+        dup back-sound>> play-sound
         items>> 0 >>item-index drop
     ] when 
 
     KEY_Z is-key-pressed
     [
+        menu select-sound>> play-sound
         is-act
         [
             menu MENU_TEXT_ACT >>current-state drop
@@ -305,6 +332,7 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
                 selected-item name>> selected-item health>> ITEM-TEXT sprintf >>current-text
                 0 >>current-character
                 "" >>printed-text drop
+                menu hp-up>> play-sound
                 player dup hp>> selected-item health>> + >>hp
                 hp>> 99 > [ player 99 >>hp drop ] when
                 selected-item "" >>name drop
@@ -341,7 +369,12 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
         dup player-leg-rect>>
         dup y>> 70 <=
         [ [ 500 get-frame-time * + ] change-y >>player-leg-rect ]
-        [ drop 1.0 >>trans-timer t >>attack-action-done ] if
+        [
+            drop 
+            1.0 >>trans-timer
+            t >>attack-action-done
+            Menu get boss-damage>> play-sound
+        ] if
         drop
     ] if ;
 
@@ -504,6 +537,12 @@ CONSTANT: ITEM-TEXT "You ate the %s.|%d HP recovered."
 
 : unload-menu ( -- )
     Menu get
+    dup beep-sound>> unload-sound
+    dup select-sound>> unload-sound
+    dup back-sound>> unload-sound
+    dup letter-sound>> unload-sound
+    dup boss-damage>> unload-sound
+    dup hp-up>> unload-sound
     dup player-cursor>> unload-texture
     player-leg>> unload-texture
     unload-buttons ;

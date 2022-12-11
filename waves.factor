@@ -23,6 +23,8 @@ TUPLE: wave-vars
     { leg-texture Texture2D }
     { pizza-texture Texture2D }
     { tower-texture Texture2D }
+    { hurt-sound Sound }
+    { pizza-explosion Sound }
     { bullet-list sequence }
     { box-size-changed boolean }
     { set-random-wave boolean }
@@ -38,7 +40,13 @@ C: <wave-vars> wave-vars
     "assets/graphics/Sicily_leg.png" load-texture
     "assets/graphics/pizza.png" load-texture
     "assets/graphics/pisa_tower.png" load-texture
-    0 { } new-sequence f f f <wave-vars> Waves set ;
+    "assets/sfx/it_hurts.wav" load-sound
+    "assets/sfx/pizza_explosion.wav" load-sound
+    0 { } new-sequence f f f <wave-vars> Waves set
+
+    Waves get
+    dup hurt-sound>> dup 1.4 set-sound-pitch 0.05 set-sound-volume
+    pizza-explosion>> 0.1 set-sound-volume ;
 
 :: set-wave-1 ( -- )
     Waves get
@@ -115,7 +123,6 @@ C: <wave-vars> wave-vars
     [ text-box-rect [ swap sgn 10 * - ] change-height ] unless
     2drop
 
-    ! wave wave-timer>> . "wave-timer<-" print
     wave wave-timer>> 0 <= text-box-rect width>> get-screen-width 200 - >= and
     [
         wave
@@ -144,13 +151,17 @@ C: <wave-vars> wave-vars
             [ bullet direction>> x>> get-frame-time * bullet angle-direction>> sin * + ] change-x                
             bullet hitbox>> y>> get-screen-height 1.6 / > bullet special-flag>> not and wave current-wave>> WAVE_2 = and
             [
+                wave pizza-explosion>> play-sound
                 bullet
                 t >>special-flag
                 dup angle-facing>> 10.0 deg>rad - >>angle-direction
                 drop
             ] when
             player box>> x>> player box>> y>> player size>> x>> player size>> y>> Rectangle boa check-collision-recs
-            [ player [ wave damage>> - ] change-hp player! ] when
+            [
+                wave hurt-sound>> is-sound-playing [ wave hurt-sound>> play-sound ] unless
+                player [ wave damage>> - ] change-hp player! 
+            ] when
             ! drop
         ] if
     ] each-index
@@ -229,4 +240,6 @@ C: <wave-vars> wave-vars
     Waves get
     dup leg-texture>> unload-texture 
     dup pizza-texture>> unload-texture
-    tower-texture>> unload-texture ;
+    dup tower-texture>> unload-texture
+    dup hurt-sound>> unload-sound
+    pizza-explosion>> unload-sound ;

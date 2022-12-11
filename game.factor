@@ -7,6 +7,7 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
 : init-game ( -- )
     960 640 "Flag wars 2" init-window
     60 set-target-fps
+    init-audio-device
     init-boss
     init-menu
     init-player ;
@@ -40,6 +41,7 @@ CONSTANT: SICILY-YELLOW S{ Color f 252 221 9 255 }
     ] loop ;
 
 : unload-game ( -- )
+    close-audio-device
     unload-boss
     unload-menu
     close-window ;
