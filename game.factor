@@ -1,4 +1,4 @@
-USING: accessors boss classes.struct kernel math menu namespaces player raylib ;
+USING: accessors boss classes.struct kernel math menu namespaces player raylib system ;
 IN: game
 
 CONSTANT: SICILY-RED S{ Color f 218 18 26 255 }
