@@ -4,7 +4,7 @@ This is the source code for the game Flag Wars 2 made in Factor.
 
 Watch on Youtube (click the image):
 
-[![Watch on Youtube](https://img.youtube.com/vi/zkl3gfGp67M/0.jpg)](https://www.youtube.com/watch?v=zkl3gfGp67M)
+[![Watch on Youtube](https://img.youtube.com/vi/zkl3gfGp67M/maxresdefault.jpg)](https://www.youtube.com/watch?v=zkl3gfGp67M)
 
 #### Language used
 
